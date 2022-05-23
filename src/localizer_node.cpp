@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/filters/crop_box.h>
 #include <thread>
 #include "icp_localization/common/typedefs.hpp"
 #include "icp_localization/helpers.hpp"
@@ -16,14 +17,22 @@
 using namespace icp_loco;
 Pointcloud::Ptr mapCloud;
 ros::Publisher cloudPub;
-const double kRadToDeg = 180.0/M_PI;
+const double kRadToDeg = 180.0 / M_PI;
 
-Pointcloud::Ptr loadPointcloudFromPcd(const std::string& filename)
+Pointcloud::Ptr loadPointcloudFromPcd(const std::string &filename)
 {
   Pointcloud::Ptr cloud(new Pointcloud);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr scanCloudCroped2D(new Pointcloud);
   pcl::PCLPointCloud2 cloudBlob;
   pcl::io::loadPCDFile(filename, cloudBlob);
   pcl::fromPCLPointCloud2(cloudBlob, *cloud);
+
+  // pcl::CropBox<pcl::PointXYZ> boxFilter;
+  // boxFilter.setMin(Eigen::Vector4f(-100.0f, -100.0f, -1.0f, 1.0));
+  // boxFilter.setMax(Eigen::Vector4f(100.0f, 100.0f, -0.5f, 1.0));
+  // boxFilter.setInputCloud(cloud);
+  // boxFilter.filter(*cloud);
+
   return cloud;
 }
 
@@ -37,8 +46,6 @@ void publishCloud(Pointcloud::Ptr cloud, const ros::Publisher &pub, const std::s
   pub.publish(msg);
 }
 
-
-
 int main(int argc, char **argv)
 {
 
@@ -48,14 +55,13 @@ int main(int argc, char **argv)
   cloudPub = nh.advertise<sensor_msgs::PointCloud2>("icp_map", 1, true);
   const std::string pclFilename = nh.param<std::string>("pcd_filename", "");
   mapCloud = loadPointcloudFromPcd(pclFilename);
-  const Eigen::Quaterniond qInit = icp_loco::getOrientationFromParameterServer(nh,"icp_localization/initial_pose/",true);
-  const Eigen::Vector3d pInit = icp_loco::getPositionFromParameterServer(nh,"icp_localization/initial_pose/");
+  const Eigen::Quaterniond qInit = icp_loco::getOrientationFromParameterServer(nh, "icp_localization/initial_pose/", true);
+  const Eigen::Vector3d pInit = icp_loco::getPositionFromParameterServer(nh, "icp_localization/initial_pose/");
   ICPlocalization icp(nh);
   icp.setMapCloud(*mapCloud);
   icp.setInitialPose(pInit, qInit);
   icp.initialize();
   std::cout << "succesfully initialized icp" << std::endl;
-
 
   publishCloud(mapCloud, cloudPub, icp.getFixedFrame());
 
@@ -65,4 +71,3 @@ int main(int argc, char **argv)
 
   return 0;
 }
-

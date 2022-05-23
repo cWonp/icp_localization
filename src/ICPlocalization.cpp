@@ -300,10 +300,10 @@ void ICPlocalization::icpWorker() {
 		const auto endTime = ch::steady_clock::now();
 		const unsigned int nUs = ch::duration_cast<ch::microseconds>(endTime - startTime).count();
 		const double timeMs = nUs / 1000.0;
-//    std::string infoStr = "Scan matching took: " + std::to_string(timeMs) + " ms \n";
-//    ROS_INFO_STREAM(infoStr);
+    std::string infoStr = "Scan matching took: " + std::to_string(timeMs) + " ms \n";
+    ROS_INFO_STREAM(infoStr);
 
-//    ROS_INFO_STREAM_THROTTLE(10.0, "Scan matching took: " << timeMs << " ms");
+    ROS_INFO_STREAM_THROTTLE(10.0, "Scan matching took: " << timeMs << " ms");
 
 		std::thread t([this]() {
 			publishPose();
